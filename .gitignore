@@ -28,7 +28,7 @@
 .idea/*
 *.iml
 *.iws
-!.idea/fileTemplates/
+!.idea/copyright/
 
 # Maven #
 target/
