@@ -90,9 +90,7 @@ public class SavingUtil<S extends ConfigurationSerializable> {
             }
         }
 
-        if (t.exists()) {
-            t.delete();
-        }
+        t.delete();
     }
 
     public @Nullable S load(@NotNull String fileName) throws IOException, InvalidConfigurationException {
@@ -112,6 +110,17 @@ public class SavingUtil<S extends ConfigurationSerializable> {
 
     }
 
+    public @Nullable S loadOrCorrupt(@NotNull String fileName) {
+        try {
+            return load(fileName);
+        } catch (IOException | InvalidConfigurationException e) {
+            logger.severe("Couldn't load file " + fileName + ". Renaming it " + fileName + ".corrupted");
+            e.printStackTrace();
+            moveFileToCorrupted(fileName);
+            return null;
+        }
+    }
+
     public boolean canLoad(@NotNull String fileName) {
         return new File(directory, Objects.requireNonNull(fileName, "File name is null.") + ".dat").exists();
     }
@@ -127,12 +136,7 @@ public class SavingUtil<S extends ConfigurationSerializable> {
 
     public boolean remove(@NotNull String fileName) {
         File f = new File(directory, Objects.requireNonNull(fileName, "File name is null.") + ".dat");
-
-        if (f.exists()) {
-            f.delete();
-            return true;
-        }
-        return false;
+        return f.delete();
     }
 
     public List<S> loadAll() {
@@ -147,7 +151,6 @@ public class SavingUtil<S extends ConfigurationSerializable> {
                     logger.severe("Couldn't load file " + f.getName() + ". Renaming it " + f.getName() + ".corrupted");
                     e.printStackTrace();
                     moveFileToCorrupted(f.getName());
-                    f.delete();
                     continue;
                 }
 
@@ -156,7 +159,6 @@ public class SavingUtil<S extends ConfigurationSerializable> {
                     File f1 = new File(f.getPath() + ".corrupted");
                     logger.severe("Couldn't get saved object form " + f.getName() + ". Renaming it " + f.getName() + ".corrupted");
                     moveFileToCorrupted(f.getName());
-                    f.delete();
                     continue;
                 }
                 list.add(s);
@@ -197,6 +199,7 @@ public class SavingUtil<S extends ConfigurationSerializable> {
         File newFile = new File(f, newFileName + ".corrupted");
         try {
             Files.move(old, newFile);
+            old.delete();
         } catch (Exception e) {
             logger.severe("Couldn't move '" + old.getPath() + "' to '" + newFile.getPath() + "'.");
             e.printStackTrace();
