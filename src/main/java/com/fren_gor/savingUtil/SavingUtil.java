@@ -109,13 +109,13 @@ public class SavingUtil<S extends ConfigurationSerializable> {
         return (S) yaml.get("obj");
     }
 
-    public LoadResult loadOrCorrupt(@NotNull String fileName) {
+    public @NotNull LoadResult<S> loadOrCorrupt(@NotNull String fileName) {
         Validate.notNull(fileName, "File name is null.");
 
         File f = new File(directory, fileName + ".dat");
 
         if (!f.exists()) {
-            return new LoadResult(null, false);
+            return new LoadResult<S>(null, false);
         }
 
         YamlConfiguration yaml = new YamlConfiguration();
@@ -128,16 +128,16 @@ public class SavingUtil<S extends ConfigurationSerializable> {
             logger.severe("Couldn't load file '" + f.getName() + "'. Renaming it '" + f.getName() + ".corrupted'");
             e.printStackTrace();
             moveFileToCorrupted(f.getName());
-            return new LoadResult(null, true);
+            return new LoadResult<S>(null, true);
         }
 
         if (s == null) {
             logger.severe("Couldn't get saved object form '" + f.getName() + "'. Renaming it '" + f.getName() + ".corrupted'");
             moveFileToCorrupted(f.getName());
-            return new LoadResult(null, true);
+            return new LoadResult<S>(null, true);
         }
 
-        return new LoadResult(s, false);
+        return new LoadResult<S>(s, false);
     }
 
     public boolean canLoad(@NotNull String fileName) {
@@ -225,7 +225,7 @@ public class SavingUtil<S extends ConfigurationSerializable> {
 
     }
 
-    public final class LoadResult {
+    public static final class LoadResult<S extends ConfigurationSerializable> {
 
         @Nullable
         private final S s;
