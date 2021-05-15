@@ -107,18 +107,37 @@ public class SavingUtil<S extends ConfigurationSerializable> {
         yaml.load(f);
 
         return (S) yaml.get("obj");
-
     }
 
-    public @Nullable S loadOrCorrupt(@NotNull String fileName) {
-        try {
-            return load(fileName);
-        } catch (IOException | InvalidConfigurationException e) {
-            logger.severe("Couldn't load file " + fileName + ". Renaming it " + fileName + ".corrupted");
-            e.printStackTrace();
-            moveFileToCorrupted(fileName);
-            return null;
+    public LoadResult loadOrCorrupt(@NotNull String fileName) {
+        Validate.notNull(fileName, "File name is null.");
+
+        File f = new File(directory, fileName + ".dat");
+
+        if (!f.exists()) {
+            return new LoadResult(null, false);
         }
+
+        YamlConfiguration yaml = new YamlConfiguration();
+
+        @Nullable S s;
+        try {
+            yaml.load(f);
+            s = (S) yaml.get("obj");
+        } catch (IOException | InvalidConfigurationException e) {
+            logger.severe("Couldn't load file '" + f.getName() + "'. Renaming it '" + f.getName() + ".corrupted'");
+            e.printStackTrace();
+            moveFileToCorrupted(f.getName());
+            return new LoadResult(null, true);
+        }
+
+        if (s == null) {
+            logger.severe("Couldn't get saved object form '" + f.getName() + "'. Renaming it '" + f.getName() + ".corrupted'");
+            moveFileToCorrupted(f.getName());
+            return new LoadResult(null, true);
+        }
+
+        return new LoadResult(s, false);
     }
 
     public boolean canLoad(@NotNull String fileName) {
@@ -148,7 +167,7 @@ public class SavingUtil<S extends ConfigurationSerializable> {
                 try {
                     yaml.load(f);
                 } catch (Exception e) {
-                    logger.severe("Couldn't load file " + f.getName() + ". Renaming it " + f.getName() + ".corrupted");
+                    logger.severe("Couldn't load file '" + f.getName() + "'. Renaming it '" + f.getName() + ".corrupted'");
                     e.printStackTrace();
                     moveFileToCorrupted(f.getName());
                     continue;
@@ -156,8 +175,7 @@ public class SavingUtil<S extends ConfigurationSerializable> {
 
                 S s = (S) yaml.get("obj");
                 if (s == null) {
-                    File f1 = new File(f.getPath() + ".corrupted");
-                    logger.severe("Couldn't get saved object form " + f.getName() + ". Renaming it " + f.getName() + ".corrupted");
+                    logger.severe("Couldn't get saved object form '" + f.getName() + "'. Renaming it '" + f.getName() + ".corrupted'");
                     moveFileToCorrupted(f.getName());
                     continue;
                 }
@@ -195,7 +213,7 @@ public class SavingUtil<S extends ConfigurationSerializable> {
             f.mkdirs();
         }
 
-        File old = new File(directory, fileName + ".dat");
+        File old = new File(directory, fileName.endsWith(".dat") ? fileName : fileName + ".dat");
         File newFile = new File(f, newFileName + ".corrupted");
         try {
             Files.move(old, newFile);
@@ -205,6 +223,34 @@ public class SavingUtil<S extends ConfigurationSerializable> {
             e.printStackTrace();
         }
 
+    }
+
+    public final class LoadResult {
+
+        @Nullable
+        private final S s;
+        private final boolean corrupted;
+
+        public LoadResult(@Nullable S s, boolean corrupted) {
+            this.s = s;
+            this.corrupted = corrupted;
+        }
+
+        /**
+         * Get the loaded object.
+         *
+         * @return {@code null} if the requested file doesn't exists, otherwise the loaded object.
+         * @throws IllegalStateException If file was corrupted.
+         */
+        public @Nullable S getObject() throws IllegalStateException {
+            if (corrupted)
+                throw new IllegalStateException("File was corrupted.");
+            return s;
+        }
+
+        public boolean isCorrupted() {
+            return corrupted;
+        }
     }
 
 }
