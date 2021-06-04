@@ -72,12 +72,10 @@
         <defaultGoal>clean install</defaultGoal>
         <resources>
             <resource>
-                <targetPath>.</targetPath>
                 <filtering>false</filtering>
                 <directory>.</directory>
                 <includes>
                     <include>LICENSE</include>
-                    <include>NOTICE</include>
                 </includes>
             </resource>
         </resources>
